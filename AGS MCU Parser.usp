@@ -1,0 +1,135 @@
+//Compiler Directives
+#SYMBOL_NAME "AGS MCU PARSER"
+#CATEGORY "46" "AGS Module" 
+// Custom
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+
+ //IO Variables
+BUFFER_INPUT Rx$[600];
+STRING_INPUT VMR_Address$[100], ActiveCallString$[50], CUSTOM_PREFIX$[3], Custom_Prefix_Message$[20], VMR_PIN[10], VMR_PREFIX$[10][8], CUCM_PREFIX$[10][8] ;
+DIGITAL_INPUT Clear_VMR_Address_Buffer, Refresh_Token, Call_Active_FB, DEVICE_TYPE_MCU_FB, Custom_Prefix_Pin_Required;
+STRING_OUTPUT VMR_Token$,VMR_ID$,VMR_ID_Address$, Call_Type$;
+DIGITAL_OUTPUT MCU_Layout_Available_FB, VMR_PIN_REQUIRED;
+
+
+
+//Global Variables
+STRING temp$[300], vmr_id_temp$[6],Call_Type_VMR$[32],Call_Type_CUCM$[32],Call_Type_MCU_NOT_FOUND[32];
+INTEGER X;
+
+
+//Functions
+
+FUNCTION CALL_TYPE_LOOKUP()
+{		
+
+X = 0;
+WHILE (X < 10)
+
+	{
+	X = X + 1;
+	Call_Type_VMR$ = "VMR";
+	Call_Type_CUCM$ = "CUCM";
+	Call_Type_MCU_NOT_FOUND = "No registered MCU prefix found"; 
+
+		IF (x < 10)
+	
+			{       
+//IF  (FIND (VMR_PREFIX$[1],ActiveCallString$) || (FIND (VMR_PREFIX$[2],ActiveCallString$) || (FIND (VMR_PREFIX$[3],ActiveCallString$) && DEVICE_TYPE_MCU_FB)))		
+	   
+			IF 	(FIND (VMR_PREFIX$[X],ActiveCallString$) && DEVICE_TYPE_MCU_FB)
+		  
+				{ 
+	        	Call_Type$ = Call_Type_VMR$;
+				MCU_Layout_Available_FB = 1;
+				VMR_PIN_REQUIRED = 1;				
+                break;
+				}
+
+	
+			ELSE IF (FIND (CUCM_PREFIX$[X], ActiveCallString$) && DEVICE_TYPE_MCU_FB)
+
+				{
+				Call_Type$ = Call_Type_CUCM$;
+				MCU_Layout_Available_FB = 1;
+				VMR_PIN_REQUIRED = 0;           	 	
+				break;
+				}
+
+			ELSE IF (FIND (CUSTOM_PREFIX$, ActiveCallString$) && DEVICE_TYPE_MCU_FB)
+
+				{
+				Call_Type$ = Custom_Prefix_Message$;	
+				MCU_Layout_Available_FB = 1;
+				VMR_PIN_REQUIRED = Custom_Prefix_Pin_Required;  
+				break;
+				}
+				
+						
+			}
+
+		ELSE 
+
+			{
+			Call_Type$ = Call_Type_MCU_NOT_FOUND;
+			MCU_Layout_Available_FB = 0;
+			VMR_PIN_REQUIRED = 0;   
+			break;
+			}
+ 			
+	}
+
+}
+
+
+FUNCTION FIND_TOKEN()
+
+{
+		WHILE(LEN(Rx$) && FIND("token", rx$))
+		{
+			temp$ = GATHER(",", Rx$);
+    		VMR_Token$ = MID(temp$, 12, LEN(temp$)-13);
+   		}
+}
+
+FUNCTION FIND_CONF_ID()
+
+{
+		WHILE(LEN(Rx$) && FIND("conference_name", rx$))
+		{
+			temp$ = GATHER(",", Rx$);
+			vmr_id_temp$ = MID(temp$, 22, LEN(temp$)-23);
+			VMR_ID$ = vmr_id_temp$;
+			VMR_ID_Address$ = VMR_Address$ + vmr_id_temp$;
+   		}
+}
+
+//Event
+THREADSAFE CHANGE Rx$
+		{
+		FIND_TOKEN();
+		FIND_CONF_ID();		
+		}
+
+THREADSAFE CHANGE ActiveCallString$ 
+
+{
+		IF (LEN(ActiveCallString$) && Call_Active_FB)
+
+		{
+		CALL_TYPE_LOOKUP();
+		}
+
+}
+
+THREADSAFE PUSH Refresh_Token
+		{
+		FIND_TOKEN();		
+		}
+
+THREADSAFE PUSH Clear_VMR_Address_Buffer
+		{
+		ClearBuffer (VMR_Address$);
+		}

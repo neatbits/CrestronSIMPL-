@@ -1,0 +1,60 @@
+//Compiler Directives
+#SYMBOL_NAME "AGS VMR Parser V1"
+#CATEGORY "46" "AGS Module" 
+// Custom
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+
+ //IO Variables
+BUFFER_INPUT Rx$[600];
+STRING_INPUT VMR_Address$[100];
+DIGITAL_INPUT Clear_VMR_Address_Buffer, Refresh_Token;
+STRING_OUTPUT VMR_Token$,VMR_ID$,VMR_ID_Address$;
+
+
+//Global Variables
+STRING temp$[300];
+STRING vmr_id_temp$[6];
+
+//Functions
+
+FUNCTION FIND_TOKEN()
+
+{
+		WHILE(LEN(Rx$) && FIND("token", rx$))
+		{
+			temp$ = GATHER(",", Rx$);
+    		VMR_Token$ = MID(temp$, 12, LEN(temp$)-13);
+   		}
+}
+
+FUNCTION FIND_CONF_ID()
+
+{
+		WHILE(LEN(Rx$) && FIND("conference_name", rx$))
+		{
+			temp$ = GATHER(",", Rx$);
+			vmr_id_temp$ = MID(temp$, 22, LEN(temp$)-23);
+			VMR_ID$ = vmr_id_temp$;
+			VMR_ID_Address$ = VMR_Address$ + vmr_id_temp$;
+   		}
+}
+
+//Event
+THREADSAFE CHANGE Rx$
+		{
+		FIND_TOKEN();
+		FIND_CONF_ID();		
+		}
+
+PUSH Refresh_Token
+		{
+		FIND_TOKEN();		
+		}
+
+PUSH Clear_VMR_Address_Buffer
+		{
+		ClearBuffer (VMR_Address$);
+		}
+

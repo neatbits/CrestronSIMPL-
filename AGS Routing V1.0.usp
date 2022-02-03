@@ -1,0 +1,35 @@
+//Compiler Directives
+#OUTPUT_SHIFT 32
+#SYMBOL_NAME "AGS Routing V1.0"
+#CATEGORY "46" "AGS MODULE" 
+
+// Custom
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+ 
+//IO Variables
+STRING_INPUT Input_Name[32][64];
+ANALOG_INPUT VideoOutFB[32];	
+STRING_OUTPUT ActiveInputName[32,32];
+	
+//Functions
+THREADSAFE CHANGE VideoOutFB
+	{
+	Integer i;
+	i=GetLastModifiedArrayIndex();
+    
+	if(VideoOutFB[i]>0)
+    	{
+		ActiveInputName[i] = Input_Name[VideoOutFB[i]];	
+		}
+    else
+		{
+		ActiveInputName[i] = "NO INPUT";
+		}	
+   	}
+
+Function Main()
+	{
+		WaitForInitializationComplete();
+	}

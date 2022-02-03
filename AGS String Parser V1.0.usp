@@ -1,0 +1,39 @@
+//Compiler Directives
+#SYMBOL_NAME "AGS String Parser V1"
+#CATEGORY "46" "AGS Module" // Custom
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+
+ //IO Variables
+BUFFER_INPUT Rx$[600];
+
+STRING_OUTPUT Token$;
+
+//Global Variables
+INTEGER giLocA, giLocB, giLocC;
+STRING temp$[300];
+
+//Event
+
+THREADSAFE CHANGE rx$
+
+{
+WHILE(LEN(Rx$) && FIND("token", rx$))
+
+{
+temp$ = GATHER(",", Rx$);
+
+giLocA = FIND("token", temp$);
+giLocB = FIND("token", temp$, giLocA + 2);
+giLocC = FIND("token", temp$, giLocB + 2);
+
+TRACE("giLocC = %u", giLocC);
+TRACE("giLocC = %x", giLocC);
+TRACE("giLocC = %X", giLocC);
+
+
+
+Token$ = MID(temp$, giLocC + 8, LEN(temp$)-1 - (giLocC + 1));
+}
+}
